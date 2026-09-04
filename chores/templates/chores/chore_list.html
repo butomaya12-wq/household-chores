@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Household chores</title>
+</head>
+<body>
+  <h1>Household chores</h1>
+  <p><a href="{% url 'chores:create' %}">Create chore</a></p>
+
+  {% if chores %}
+    <ul>
+      {% for chore in chores %}
+        <li>
+          {{ chore.title }} — due {{ chore.due_date|date:"Y-m-d" }}
+          {% if chore.due_time %}at {{ chore.due_time|time:"H:i" }}{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No active chores yet.</p>
+  {% endif %}
+</body>
+</html>
