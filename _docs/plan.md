@@ -39,7 +39,8 @@ Members of one household.
 
 ### 4. Mark a chore as completed
 
-- The assigned person can mark the chore as completed.
+- Any user of the MVP interface can mark a chore as completed.
+- The assignee is informational and shows who is responsible for the chore.
 - The chore status changes from Open to Completed.
 - Other household members can see that the chore is completed.
 - Completed chores are no longer shown as active chores.
@@ -54,11 +55,11 @@ Members of one household.
 - Organizer approval of completed chores.
 - Automatic duplicate detection.
 - Recurring chores.
+- Per-user authentication and authorization.
 
 ## Constraints
 
 - One chore has one responsible person in the MVP.
 - Every chore must have a due date.
-- Only the assigned person can mark their chore as completed.
-
+- The assignee is informational; any user of the MVP interface may complete a chore.
 
