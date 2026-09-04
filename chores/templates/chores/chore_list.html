@@ -5,8 +5,9 @@
   <title>Household chores</title>
 </head>
 <body>
-  <h1>Household chores</h1>
+  <h1>Active household chores</h1>
   <p><a href="{% url 'chores:create' %}">Create chore</a></p>
+  <p><a href="{% url 'chores:completed_list' %}">View completed chores</a></p>
 
   {% if chores %}
     <ul>
@@ -16,6 +17,10 @@
           {% if chore.due_time %}at {{ chore.due_time|time:"H:i" }}{% endif %}
           — responsible: {% if chore.assignee %}{{ chore.assignee }}{% else %}Unassigned{% endif %}
           <a href="{% url 'chores:assign' chore.pk %}">Assign responsible person</a>
+          <form method="post" action="{% url 'chores:complete' chore.pk %}">
+            {% csrf_token %}
+            <button type="submit">Mark completed</button>
+          </form>
         </li>
       {% endfor %}
     </ul>

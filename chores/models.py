@@ -11,6 +11,10 @@ class HouseholdMember(models.Model):
 
 
 class Chore(models.Model):
+    class Status(models.TextChoices):
+        OPEN = "open", "Open"
+        COMPLETED = "completed", "Completed"
+
     title = models.CharField(max_length=200)
     due_date = models.DateField()
     due_time = models.TimeField(blank=True, null=True)
@@ -20,6 +24,11 @@ class Chore(models.Model):
         null=True,
         on_delete=models.PROTECT,
         related_name="chores",
+    )
+    status = models.CharField(
+        choices=Status.choices,
+        default=Status.OPEN,
+        max_length=10,
     )
 
     def clean(self):

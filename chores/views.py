@@ -1,11 +1,14 @@
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from .forms import ChoreAssigneeForm, ChoreForm
 from .models import Chore
 
 
 def chore_list(request):
-    chores = Chore.objects.order_by("due_date", "due_time", "id")
+    chores = Chore.objects.filter(status=Chore.Status.OPEN).order_by(
+        "due_date", "due_time", "id"
+    )
     return render(request, "chores/chore_list.html", {"chores": chores})
 
 
@@ -33,3 +36,18 @@ def chore_assign(request, pk):
         "chores/chore_assignee_form.html",
         {"chore": chore, "form": form},
     )
+
+
+@require_POST
+def chore_complete(request, pk):
+    chore = get_object_or_404(Chore, pk=pk)
+    chore.status = Chore.Status.COMPLETED
+    chore.save(update_fields=["status"])
+    return redirect("chores:list")
+
+
+def chore_completed_list(request):
+    chores = Chore.objects.filter(status=Chore.Status.COMPLETED).order_by(
+        "due_date", "due_time", "id"
+    )
+    return render(request, "chores/chore_completed_list.html", {"chores": chores})

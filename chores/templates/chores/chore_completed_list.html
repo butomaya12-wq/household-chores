@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Completed household chores</title>
+</head>
+<body>
+  <h1>Completed household chores</h1>
+  <p><a href="{% url 'chores:list' %}">Back to active chores</a></p>
+
+  {% if chores %}
+    <ul>
+      {% for chore in chores %}
+        <li>
+          {{ chore.title }} — status: {{ chore.get_status_display }}
+          — due {{ chore.due_date|date:"Y-m-d" }}
+          {% if chore.due_time %}at {{ chore.due_time|time:"H:i" }}{% endif %}
+          — responsible: {% if chore.assignee %}{{ chore.assignee }}{% else %}Unassigned{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No completed chores yet.</p>
+  {% endif %}
+</body>
+</html>

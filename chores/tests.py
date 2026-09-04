@@ -41,6 +41,13 @@ class ChoreModelTests(TestCase):
 
         self.assertEqual(chore.assignee, second_member)
 
+    def test_new_chore_is_open(self):
+        chore = Chore.objects.create(
+            title="Wash dishes", due_date=timezone.localdate()
+        )
+
+        self.assertEqual(chore.status, Chore.Status.OPEN)
+
 
 class ChoreFormTests(TestCase):
     def test_form_accepts_a_future_due_date_and_optional_due_time(self):
@@ -180,3 +187,61 @@ class ChoreViewsTests(TestCase):
         response = self.client.get(reverse("chores:list"))
 
         self.assertContains(response, "responsible: Alex")
+
+    def test_post_marks_chore_completed_without_authentication(self):
+        member = HouseholdMember.objects.create(name="Alex")
+        chore = Chore.objects.create(
+            title="Wash dishes",
+            due_date=timezone.localdate(),
+            assignee=member,
+        )
+
+        response = self.client.post(reverse("chores:complete", args=[chore.pk]))
+
+        self.assertRedirects(response, reverse("chores:list"))
+        chore.refresh_from_db()
+        self.assertEqual(chore.status, Chore.Status.COMPLETED)
+        self.assertEqual(chore.assignee, member)
+
+    def test_completed_chore_is_not_in_the_active_list(self):
+        active_chore = Chore.objects.create(
+            title="Wash dishes", due_date=timezone.localdate()
+        )
+        completed_chore = Chore.objects.create(
+            title="Take out trash",
+            due_date=timezone.localdate(),
+            status=Chore.Status.COMPLETED,
+        )
+
+        response = self.client.get(reverse("chores:list"))
+
+        self.assertContains(response, active_chore.title)
+        self.assertNotContains(response, completed_chore.title)
+
+    def test_completed_list_shows_status_assignee_and_due_date(self):
+        member = HouseholdMember.objects.create(name="Alex")
+        due_date = timezone.localdate()
+        chore = Chore.objects.create(
+            title="Wash dishes",
+            due_date=due_date,
+            assignee=member,
+            status=Chore.Status.COMPLETED,
+        )
+
+        response = self.client.get(reverse("chores:completed_list"))
+
+        self.assertContains(response, chore.title)
+        self.assertContains(response, "status: Completed")
+        self.assertContains(response, "responsible: Alex")
+        self.assertContains(response, due_date.isoformat())
+
+    def test_completion_requires_post(self):
+        chore = Chore.objects.create(
+            title="Wash dishes", due_date=timezone.localdate()
+        )
+
+        response = self.client.get(reverse("chores:complete", args=[chore.pk]))
+
+        self.assertEqual(response.status_code, 405)
+        chore.refresh_from_db()
+        self.assertEqual(chore.status, Chore.Status.OPEN)
