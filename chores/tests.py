@@ -245,3 +245,45 @@ class ChoreViewsTests(TestCase):
         self.assertEqual(response.status_code, 405)
         chore.refresh_from_db()
         self.assertEqual(chore.status, Chore.Status.OPEN)
+
+    def test_full_mvp_flow(self):
+        member = HouseholdMember.objects.create(name="Alex")
+        due_date = timezone.localdate() + timedelta(days=1)
+
+        response = self.client.post(
+            reverse("chores:create"),
+            data={
+                "title": "Wash dishes",
+                "due_date": due_date,
+                "due_time": "18:30",
+            },
+        )
+
+        self.assertRedirects(response, reverse("chores:list"))
+        chore = Chore.objects.get(title="Wash dishes")
+        self.assertEqual(chore.due_date, due_date)
+        self.assertEqual(chore.due_time, time(18, 30))
+
+        response = self.client.post(
+            reverse("chores:assign", args=[chore.pk]),
+            data={"assignee": member.pk},
+        )
+
+        self.assertRedirects(response, reverse("chores:list"))
+        chore.refresh_from_db()
+        self.assertEqual(chore.assignee, member)
+
+        response = self.client.post(reverse("chores:complete", args=[chore.pk]))
+
+        self.assertRedirects(response, reverse("chores:list"))
+        chore.refresh_from_db()
+        self.assertEqual(chore.status, Chore.Status.COMPLETED)
+
+        response = self.client.get(reverse("chores:list"))
+        self.assertNotContains(response, chore.title)
+
+        response = self.client.get(reverse("chores:completed_list"))
+        self.assertContains(response, chore.title)
+        self.assertContains(response, "status: Completed")
+        self.assertContains(response, "responsible: Alex")
+        self.assertContains(response, due_date.isoformat())
