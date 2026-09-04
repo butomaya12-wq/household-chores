@@ -3,10 +3,24 @@ from django.db import models
 from django.utils import timezone
 
 
+class HouseholdMember(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+
 class Chore(models.Model):
     title = models.CharField(max_length=200)
     due_date = models.DateField()
     due_time = models.TimeField(blank=True, null=True)
+    assignee = models.ForeignKey(
+        HouseholdMember,
+        blank=True,
+        null=True,
+        on_delete=models.PROTECT,
+        related_name="chores",
+    )
 
     def clean(self):
         super().clean()

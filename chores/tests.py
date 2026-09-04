@@ -5,8 +5,8 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .forms import ChoreForm
-from .models import Chore
+from .forms import ChoreAssigneeForm, ChoreForm
+from .models import Chore, HouseholdMember
 
 
 class ChoreModelTests(TestCase):
@@ -25,6 +25,21 @@ class ChoreModelTests(TestCase):
             chore.full_clean()
 
         self.assertIn("due_date", error.exception.message_dict)
+
+    def test_chore_stores_one_assignee(self):
+        first_member = HouseholdMember.objects.create(name="Alex")
+        second_member = HouseholdMember.objects.create(name="Sam")
+        chore = Chore.objects.create(
+            title="Wash dishes",
+            due_date=timezone.localdate(),
+            assignee=first_member,
+        )
+
+        chore.assignee = second_member
+        chore.save()
+        chore.refresh_from_db()
+
+        self.assertEqual(chore.assignee, second_member)
 
 
 class ChoreFormTests(TestCase):
@@ -64,6 +79,23 @@ class ChoreFormTests(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertEqual(form.errors["due_date"], ["Due date cannot be in the past."])
+
+
+class ChoreAssigneeFormTests(TestCase):
+    def setUp(self):
+        self.member = HouseholdMember.objects.create(name="Alex")
+
+    def test_form_accepts_an_existing_household_member(self):
+        form = ChoreAssigneeForm(data={"assignee": self.member.pk})
+
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["assignee"], self.member)
+
+    def test_form_requires_a_household_member(self):
+        form = ChoreAssigneeForm(data={"assignee": ""})
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("assignee", form.errors)
 
 
 class ChoreViewsTests(TestCase):
@@ -108,3 +140,43 @@ class ChoreViewsTests(TestCase):
         self.assertEqual(Chore.objects.count(), 0)
         self.assertFormError(response.context["form"], "title", "This field is required.")
         self.assertFormError(response.context["form"], "due_date", "This field is required.")
+
+    def test_assigning_a_member_updates_an_existing_chore(self):
+        first_member = HouseholdMember.objects.create(name="Alex")
+        second_member = HouseholdMember.objects.create(name="Sam")
+        chore = Chore.objects.create(
+            title="Wash dishes",
+            due_date=timezone.localdate(),
+            assignee=first_member,
+        )
+
+        response = self.client.post(
+            reverse("chores:assign", args=[chore.pk]),
+            data={"assignee": second_member.pk},
+        )
+
+        self.assertRedirects(response, reverse("chores:list"))
+        chore.refresh_from_db()
+        self.assertEqual(chore.assignee, second_member)
+
+    def test_assignment_form_displays_existing_household_members(self):
+        member = HouseholdMember.objects.create(name="Alex")
+        chore = Chore.objects.create(
+            title="Wash dishes", due_date=timezone.localdate()
+        )
+
+        response = self.client.get(reverse("chores:assign", args=[chore.pk]))
+
+        self.assertContains(response, member.name)
+
+    def test_assignee_is_visible_in_the_chore_list(self):
+        member = HouseholdMember.objects.create(name="Alex")
+        Chore.objects.create(
+            title="Wash dishes",
+            due_date=timezone.localdate(),
+            assignee=member,
+        )
+
+        response = self.client.get(reverse("chores:list"))
+
+        self.assertContains(response, "responsible: Alex")

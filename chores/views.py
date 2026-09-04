@@ -1,6 +1,6 @@
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import ChoreForm
+from .forms import ChoreAssigneeForm, ChoreForm
 from .models import Chore
 
 
@@ -16,3 +16,20 @@ def chore_create(request):
         return redirect("chores:list")
 
     return render(request, "chores/chore_form.html", {"form": form})
+
+
+def chore_assign(request, pk):
+    chore = get_object_or_404(Chore, pk=pk)
+    form = ChoreAssigneeForm(
+        request.POST if request.method == "POST" else None,
+        instance=chore,
+    )
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        return redirect("chores:list")
+
+    return render(
+        request,
+        "chores/chore_assignee_form.html",
+        {"chore": chore, "form": form},
+    )

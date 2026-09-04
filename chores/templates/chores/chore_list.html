@@ -14,6 +14,8 @@
         <li>
           {{ chore.title }} — due {{ chore.due_date|date:"Y-m-d" }}
           {% if chore.due_time %}at {{ chore.due_time|time:"H:i" }}{% endif %}
+          — responsible: {% if chore.assignee %}{{ chore.assignee }}{% else %}Unassigned{% endif %}
+          <a href="{% url 'chores:assign' chore.pk %}">Assign responsible person</a>
         </li>
       {% endfor %}
     </ul>

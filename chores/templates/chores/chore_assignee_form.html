@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Assign responsible person</title>
+</head>
+<body>
+  <h1>Assign responsible person for {{ chore.title }}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save assignee</button>
+  </form>
+  <p><a href="{% url 'chores:list' %}">Back to chores</a></p>
+</body>
+</html>
